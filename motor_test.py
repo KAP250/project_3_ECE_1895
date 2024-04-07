@@ -1,13 +1,38 @@
 import cv2
-import RPi._GPIO as GPIO
-from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_DCMotor, Adafruit_StepperMotor
 print(cv2.__version__)
 
-MOTOR_X_REVERSED = False
-MOTOR_Y_REVERSED = False
+import time
+import RPi.GPIO as GPIO
+from adafruit_motorkit import MotorKit
+from adafruit_motor import stepper
 
-MAX_STEPS_X = 30
-MAX_STEPS_Y = 15
+#Motor 1
+#Config is black and green on M1(white to green, red to black)
+#Config is blue and red on M2(orange to blue, purple to red)
+#Is reverse so .BACKWARD goes CW and .FORWARD goes CCW
 
-RELAY_PIN = 22
+#Motor 2
+#Config is black and green on M3(green to black, red to green)
+#Config is blue and red on M4(grey to blue, white to red)
+#Is NOT reverse so .BACKWARD goes CCW and .FORWARD goes CW
+kit = MotorKit()
+MOTOR_X_REVERSED = True #Base turner M1 and M2 - Motor1
+MOTOR_Y_REVERSED = False #Aimer turner M3 and M4 - Motor2
 
+#Motor 2 test
+for i in range(2000):
+    kit.stepper2.onestep(direction=stepper.FORWARD, style=stepper.MICROSTEP)
+
+#Motor 1 test
+for i in range(2000):
+    kit.stepper1.onestep(direction=stepper.BACKWARD, style=stepper.MICROSTEP)
+
+#Laser testing
+LASER_PIN = 27
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(LASER_PIN, GPIO.OUT)
+GPIO.output(LASER_PIN, GPIO.LOW)
+
+GPIO.output(LASER_PIN, GPIO.HIGH)
+time.sleep(1)
+GPIO.output(LASER_PIN, GPIO.LOW)
