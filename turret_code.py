@@ -7,7 +7,7 @@ import sys
 import termios
 import contextlib
 import imutils
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
 from adafruit_motorkit import MotorKit
 from adafruit_motor import stepper
 
@@ -18,7 +18,7 @@ MOTOR_X_REVERSED = True #Base turner M1 and M2 - Motor1
 MOTOR_Y_REVERSED = False #Aimer turner M3 and M4 - Motor2
 
 MAX_STEPS_X = 30
-MAX_STEPS_Y = 15
+MAX_STEPS_Y = 30
 
 LASER_PIN = 27
 
@@ -162,13 +162,13 @@ class Turret(object):
         self.friendly_mode = friendly_mode
 
         #Create to control motors
-        self.mh = MotorKit()
+        self.kit = MotorKit()
         atexit.register(self.__turn_off_motors)
 
         # Relay
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(LASER_PIN, GPIO.OUT)
-        GPIO.output(LASER_PIN, GPIO.LOW)
+        # GPIO.setmode(GPIO.BCM)
+        # GPIO.setup(LASER_PIN, GPIO.OUT)
+        # GPIO.output(LASER_PIN, GPIO.LOW)
 
     def calibrate(self):
         """
@@ -310,8 +310,8 @@ class Turret(object):
         :return:
         """
 
-        Turret.move_forward(self.sm_x, 1)
-        Turret.move_forward(self.sm_y, 1)
+        Turret.move_forward("1", 1)
+        Turret.move_forward("2", 1)
 
         print ('Commands: Pivot with (a) and (d). Tilt with (w) and (s). Exit with (q)\n')
         with raw_mode(sys.stdin):
@@ -323,24 +323,24 @@ class Turret(object):
 
                     if ch == "w":
                         if MOTOR_Y_REVERSED:
-                            Turret.move_forward(self.sm_y, 5)
+                            Turret.move_forward(self, "2", 5)
                         else:
-                            Turret.move_backward(self.sm_y, 5)
+                            Turret.move_backward(self, "2", 5)
                     elif ch == "s":
                         if MOTOR_Y_REVERSED:
-                            Turret.move_backward(self.sm_y, 5)
+                            Turret.move_backward(self, "2", 5)
                         else:
-                            Turret.move_forward(self.sm_y, 5)
+                            Turret.move_forward(self, "2", 5)
                     elif ch == "a":
                         if MOTOR_X_REVERSED:
-                            Turret.move_backward(self.sm_x, 5)
+                            Turret.move_backward(self, "1", 5)
                         else:
-                            Turret.move_forward(self.sm_x, 5)
+                            Turret.move_forward(self, "1", 5)
                     elif ch == "d":
                         if MOTOR_X_REVERSED:
-                            Turret.move_forward(self.sm_x, 5)
+                            Turret.move_forward(self, "1", 5)
                         else:
-                            Turret.move_backward(self.sm_x, 5)
+                            Turret.move_backward(self, "1", 5)
                     elif ch == "\n":
                         Turret.fire()
 
@@ -349,53 +349,56 @@ class Turret(object):
 
     @staticmethod
     def fire():
-        GPIO.output(LASER_PIN, GPIO.HIGH)
-        time.sleep(1)
-        GPIO.output(LASER_PIN, GPIO.LOW)
+        # GPIO.output(LASER_PIN, GPIO.HIGH)
+        # time.sleep(1)
+        # GPIO.output(LASER_PIN, GPIO.LOW)
 
     @staticmethod
-    def move_forward(motor, steps):
-        """
-        Moves the stepper motor forward the specified number of steps.
-        :param motor:
-        :param steps:
-        :return:
-        """
-        motor.step(steps, Adafruit_MotorHAT.FORWARD,  Adafruit_MotorHAT.INTERLEAVE)
+    def move_forward(self, motor, steps):
+        if(motor == "1"):
+            for i in range(steps):
+                self.kit.stepper1.onestep(direction=stepper.FORWARD, style=stepper.MICROSTEP)
+        elif(motor == "2"):
+            for i in range(steps):
+                self.kit.stepper2.onestep(direction=stepper.FORWARD, style=stepper.MICROSTEP)
 
     @staticmethod
-    def move_backward(motor, steps):
+    def move_backward(self, motor, steps):
         """
         Moves the stepper motor backward the specified number of steps
         :param motor:
         :param steps:
         :return:
         """
-        motor.step(steps, Adafruit_MotorHAT.BACKWARD, Adafruit_MotorHAT.INTERLEAVE)
+        if(motor == "1"):
+            for i in range(steps):
+                self.kit.stepper1.onestep(direction=stepper.BACKWARD, style=stepper.MICROSTEP)
+        elif(motor == "2"):
+            for i in range(steps):
+                self.kit.stepper2.onestep(direction=stepper.BACKWARD, style=stepper.MICROSTEP)
 
     def __turn_off_motors(self):
         """
         Recommended for auto-disabling motors on shutdown!
         :return:
         """
-        self.mh.getMotor(1).run(Adafruit_MotorHAT.RELEASE)
-        self.mh.getMotor(2).run(Adafruit_MotorHAT.RELEASE)
-        self.mh.getMotor(3).run(Adafruit_MotorHAT.RELEASE)
-        self.mh.getMotor(4).run(Adafruit_MotorHAT.RELEASE)
+        kit.stepper1.release()
+        kit.stepper2.release()
+        
 
 if __name__ == "__main__":
     t = Turret(friendly_mode=False)
 
-    user_input = raw_input("Choose an input mode: (1) Motion Detection, (2) Interactive\n")
+    user_input = input("Choose an input mode: (1) Motion Detection, (2) Interactive\n")
 
     if user_input == "1":
         t.calibrate()
-        if raw_input("Live video? (y, n)\n").lower() == "y":
+        if input("Live video? (y, n)\n").lower() == "y":
             t.motion_detection(show_video=True)
         else:
             t.motion_detection()
     elif user_input == "2":
-        if raw_input("Live video? (y, n)\n").lower() == "y":
+        if input("Live video? (y, n)\n").lower() == "y":
             thread.start_new_thread(VideoUtils.live_video, ())
         t.interactive()
     else:
