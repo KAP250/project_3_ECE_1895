@@ -197,14 +197,14 @@ class Turret(object):
 
                     elif ch == "a":
                         if MOTOR_X_REVERSED:
-                            Turret.move_backward(self.sm_x, 5)
+                            Turret.move_backward(self, "1", 5)
                         else:
-                            Turret.move_forward(self.sm_x, 5)
+                            Turret.move_forward(self, "1", 5)
                     elif ch == "d":
                         if MOTOR_X_REVERSED:
-                            Turret.move_forward(self.sm_x, 5)
+                            Turret.move_forward(self, "1", 5)
                         else:
-                            Turret.move_backward(self.sm_x, 5)
+                            Turret.move_backward(self, "1", 5)
                     elif ch == "\n":
                         break
 
@@ -226,14 +226,14 @@ class Turret(object):
 
                     if ch == "w":
                         if MOTOR_Y_REVERSED:
-                            Turret.move_forward(self.sm_y, 5)
+                            Turret.move_forward(self, "2", 5)
                         else:
-                            Turret.move_backward(self.sm_y, 5)
+                            Turret.move_backward(self, "2", 5)
                     elif ch == "s":
                         if MOTOR_Y_REVERSED:
-                            Turret.move_backward(self.sm_y, 5)
+                            Turret.move_backward(self, "2", 5)
                         else:
-                            Turret.move_forward(self.sm_y, 5)
+                            Turret.move_forward(self, "2", 5)
                     elif ch == "\n":
                         break
 
@@ -267,29 +267,29 @@ class Turret(object):
         if (target_steps_x - self.current_x_steps) > 0:
             self.current_x_steps += 1
             if MOTOR_X_REVERSED:
-                t_x = threading.Thread(target=Turret.move_forward, args=(self.sm_x, 2,))
+                t_x = threading.Thread(target=Turret.move_forward, args=(self, "1", 2,))
             else:
-                t_x = threading.Thread(target=Turret.move_backward, args=(self.sm_x, 2,))
+                t_x = threading.Thread(target=Turret.move_backward, args=(self, "1", 2,))
         elif (target_steps_x - self.current_x_steps) < 0:
             self.current_x_steps -= 1
             if MOTOR_X_REVERSED:
-                t_x = threading.Thread(target=Turret.move_backward, args=(self.sm_x, 2,))
+                t_x = threading.Thread(target=Turret.move_backward, args=(self, "1", 2,))
             else:
-                t_x = threading.Thread(target=Turret.move_forward, args=(self.sm_x, 2,))
+                t_x = threading.Thread(target=Turret.move_forward, args=(self, "1", 2,))
 
         # move y
         if (target_steps_y - self.current_y_steps) > 0:
             self.current_y_steps += 1
             if MOTOR_Y_REVERSED:
-                t_y = threading.Thread(target=Turret.move_backward, args=(self.sm_y, 2,))
+                t_y = threading.Thread(target=Turret.move_backward, args=(self, "2", 2,))
             else:
-                t_y = threading.Thread(target=Turret.move_forward, args=(self.sm_y, 2,))
+                t_y = threading.Thread(target=Turret.move_forward, args=(self, "2", 2,))
         elif (target_steps_y - self.current_y_steps) < 0:
             self.current_y_steps -= 1
             if MOTOR_Y_REVERSED:
-                t_y = threading.Thread(target=Turret.move_forward, args=(self.sm_y, 2,))
+                t_y = threading.Thread(target=Turret.move_forward, args=(self, "2", 2,))
             else:
-                t_y = threading.Thread(target=Turret.move_backward, args=(self.sm_y, 2,))
+                t_y = threading.Thread(target=Turret.move_backward, args=(self, "2", 2,))
 
         # fire if necessary
         if not self.friendly_mode:
@@ -352,6 +352,7 @@ class Turret(object):
         # GPIO.output(LASER_PIN, GPIO.HIGH)
         # time.sleep(1)
         # GPIO.output(LASER_PIN, GPIO.LOW)
+        return
 
     @staticmethod
     def move_forward(self, motor, steps):
@@ -382,8 +383,8 @@ class Turret(object):
         Recommended for auto-disabling motors on shutdown!
         :return:
         """
-        kit.stepper1.release()
-        kit.stepper2.release()
+        self.kit.stepper1.release()
+        self.kit.stepper2.release()
         
 
 if __name__ == "__main__":
