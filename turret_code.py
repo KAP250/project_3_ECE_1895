@@ -7,7 +7,7 @@ import sys
 import termios
 import contextlib
 import imutils
-#import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 from adafruit_motorkit import MotorKit
 from adafruit_motor import stepper
 
@@ -15,7 +15,7 @@ from adafruit_motor import stepper
 ### User Parameters ###
 
 MOTOR_X_REVERSED = True #Base turner M1 and M2 - Motor1
-MOTOR_Y_REVERSED = False #Aimer turner M3 and M4 - Motor2
+MOTOR_Y_REVERSED = True #Aimer turner M3 and M4 - Motor2
 
 MAX_STEPS_X = 30
 MAX_STEPS_Y = 30
@@ -310,8 +310,8 @@ class Turret(object):
         :return:
         """
 
-        Turret.move_forward("1", 1)
-        Turret.move_forward("2", 1)
+        Turret.move_forward(self, "1", 1)
+        Turret.move_forward(self, "2", 1)
 
         print ('Commands: Pivot with (a) and (d). Tilt with (w) and (s). Exit with (q)\n')
         with raw_mode(sys.stdin):
@@ -323,24 +323,24 @@ class Turret(object):
 
                     if ch == "w":
                         if MOTOR_Y_REVERSED:
-                            Turret.move_forward(self, "2", 5)
+                            Turret.move_forward(self, "2", 10)
                         else:
-                            Turret.move_backward(self, "2", 5)
+                            Turret.move_backward(self, "2", 10)
                     elif ch == "s":
                         if MOTOR_Y_REVERSED:
-                            Turret.move_backward(self, "2", 5)
+                            Turret.move_backward(self, "2", 10)
                         else:
-                            Turret.move_forward(self, "2", 5)
+                            Turret.move_forward(self, "2", 10)
                     elif ch == "a":
                         if MOTOR_X_REVERSED:
-                            Turret.move_backward(self, "1", 5)
+                            Turret.move_backward(self, "1", 10)
                         else:
-                            Turret.move_forward(self, "1", 5)
+                            Turret.move_forward(self, "1", 10)
                     elif ch == "d":
                         if MOTOR_X_REVERSED:
-                            Turret.move_forward(self, "1", 5)
+                            Turret.move_forward(self, "1", 10)
                         else:
-                            Turret.move_backward(self, "1", 5)
+                            Turret.move_backward(self, "1", 10)
                     elif ch == "\n":
                         Turret.fire()
 
@@ -349,9 +349,9 @@ class Turret(object):
 
     @staticmethod
     def fire():
-        # GPIO.output(LASER_PIN, GPIO.HIGH)
-        # time.sleep(1)
-        # GPIO.output(LASER_PIN, GPIO.LOW)
+        GPIO.output(LASER_PIN, GPIO.HIGH)
+        time.sleep(1)
+        GPIO.output(LASER_PIN, GPIO.LOW)
         return
 
     @staticmethod

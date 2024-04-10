@@ -21,7 +21,7 @@ MOTOR_Y_REVERSED = False #Aimer turner M3 and M4 - Motor2
 
 #Motor 2 test
 for i in range(2000):
-    kit.stepper2.onestep(direction=stepper.FORWARD, style=stepper.MICROSTEP)
+    kit.stepper2.onestep(direction=stepper.BACKWARD, style=stepper.MICROSTEP)
 
 #Motor 1 test
 for i in range(2000):
