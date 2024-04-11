@@ -1,6 +1,6 @@
 import cv2
 import time
-import thread
+import _thread
 import threading
 import atexit
 import sys
@@ -47,7 +47,7 @@ class VideoUtils(object):
         """
         Opens a window with live video.
         """
-        video_capture = cv2.VideoCapture(camera_port)
+        video_capture = cv2.VideoCapture(0)
         while True:
             # Capture frame-by-frame
             ret, frame = video_capture.read()
@@ -400,7 +400,7 @@ if __name__ == "__main__":
             t.motion_detection()
     elif user_input == "2":
         if input("Live video? (y, n)\n").lower() == "y":
-            thread.start_new_thread(VideoUtils.live_video, ())
+            _thread.start_new_thread(VideoUtils.live_video, ())
         t.interactive()
     else:
         print ("Unknown input mode. Please choose a number (1) or (2)")
