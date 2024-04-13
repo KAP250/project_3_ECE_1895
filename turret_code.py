@@ -39,9 +39,6 @@ def raw_mode(file):
 
 
 class VideoUtils(object):
-    """
-    Helper functions for video utilities.
-    """
     @staticmethod
     def live_video(camera_port=0):
         """
@@ -64,7 +61,6 @@ class VideoUtils(object):
 
     @staticmethod
     def find_motion(callback, camera_port=0, show_video=False):
-
         camera = cv2.VideoCapture(camera_port)
         time.sleep(0.25)
 
@@ -88,7 +84,7 @@ class VideoUtils(object):
             # resize the frame, convert it to grayscale, and blur it
             frame = imutils.resize(frame, width=500)
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            gray = cv2.GaussianBlur(gray, (21, 21), 0)
+            gray = cv2.GaussianBlur(gray, (5, 5), 0)
 
             # if the first frame is None, initialize it
             if firstFrame is None:
@@ -141,9 +137,61 @@ class VideoUtils(object):
         camera.release()
         cv2.destroyAllWindows()
 
+
+    #     camera = cv2.VideoCapture(camera_port)
+    #     time.sleep(.25)
+
+    #     # Create background subtractor
+    #     bg_subtractor = cv2.createBackgroundSubtractorMOG2()
+
+    #     # Initialize variables
+    #     last_motion_time = time.time()
+    #     motion_delay = 1.0  # Minimum delay between detecting motions (in seconds)
+
+    #     while True:
+    #         grabbed, frame = camera.read()
+    #         if not grabbed:
+    #             break
+
+    #         # Apply background subtraction
+    #         fg_mask = bg_subtractor.apply(frame)
+
+    #         # Process the foreground mask (e.g., find contours)
+    #         contours, _ = cv2.findContours(fg_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    #         for contour in contours:
+    #             # Check if the contour has valid points
+    #             if len(contour) >= 5:
+    #                 # Calculate bounding rectangle for each contour
+    #                 x, y, w, h = cv2.boundingRect(contour)
+
+    #                 # Skip invalid contours (e.g., small areas)
+    #                 if w > 0 and h > 0:
+    #                     # Draw the rectangle on the original frame
+    #                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+    #                     # Pass the bounding box coordinates to the callback function
+    #                     callback((x, y, w, h), frame)
+
+    #                     # Update last motion time
+    #                     last_motion_time = time.time()
+
+    #         # Display the result
+    #         if show_video:
+    #             cv2.imshow("Motion Detection", frame)
+
+    #         # Check if enough time has passed since the last motion
+    #         if time.time() - last_motion_time >= motion_delay:
+    #             key = cv2.waitKey(1) & 0xFF
+    #             if key == ord("q"):
+    #                 break
+
+    #     camera.release()
+    #     cv2.destroyAllWindows()
+
     @staticmethod
     def get_best_contour(imgmask, threshold):
-        im, contours, hierarchy = cv2.findContours(imgmask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(imgmask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         best_area = threshold
         best_cnt = None
         for cnt in contours:
@@ -155,9 +203,6 @@ class VideoUtils(object):
 
 
 class Turret(object):
-    """
-    Class used for turret control.
-    """
     def __init__(self, friendly_mode=True):
         self.friendly_mode = friendly_mode
 
@@ -165,16 +210,15 @@ class Turret(object):
         self.kit = MotorKit()
         atexit.register(self.__turn_off_motors)
 
-        # Relay
-        # GPIO.setmode(GPIO.BCM)
-        # GPIO.setup(LASER_PIN, GPIO.OUT)
-        # GPIO.output(LASER_PIN, GPIO.LOW)
+        self.current_x_steps = 0
+        self.current_y_steps = 0
+
+        # Laser
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(LASER_PIN, GPIO.OUT)
+        GPIO.output(LASER_PIN, GPIO.LOW)
 
     def calibrate(self):
-        """
-        Waits for input to calibrate the turret's axis
-        :return:
-        """
         print ("Please calibrate the tilt of the gun so that it is level. Commands: (w) moves up, (s) moves down. Press (enter) to finish.\n")
         self.__calibrate_y_axis()
 
@@ -184,10 +228,6 @@ class Turret(object):
         print ("Calibration finished.")
 
     def __calibrate_x_axis(self):
-        """
-        Waits for input to calibrate the x axis
-        :return:
-        """
         with raw_mode(sys.stdin):
             try:
                 while True:
@@ -213,10 +253,6 @@ class Turret(object):
                 sys.exit(1)
 
     def __calibrate_y_axis(self):
-        """
-        Waits for input to calibrate the y axis.
-        :return:
-        """
         with raw_mode(sys.stdin):
             try:
                 while True:
@@ -242,10 +278,6 @@ class Turret(object):
                 sys.exit(1)
 
     def motion_detection(self, show_video=False):
-        """
-        Uses the camera to move the turret. OpenCV ust be configured to use this.
-        :return:
-        """
         VideoUtils.find_motion(self.__move_axis, show_video=show_video)
 
     def __move_axis(self, contour, frame):
@@ -256,8 +288,8 @@ class Turret(object):
         target_steps_x = (2*MAX_STEPS_X * (x + w / 2) / v_w) - MAX_STEPS_X
         target_steps_y = (2*MAX_STEPS_Y*(y+h/2) / v_h) - MAX_STEPS_Y
 
-        print ("x: %s, y: %s" % (str(target_steps_x), str(target_steps_y)))
-        print ("current x: %s, current y: %s" % (str(self.current_x_steps), str(self.current_y_steps)))
+        #print ("x: %s, y: %s" % (str(target_steps_x), str(target_steps_y)))
+        #print ("current x: %s, current y: %s" % (str(self.current_x_steps), str(self.current_y_steps)))
 
         t_x = threading.Thread()
         t_y = threading.Thread()
@@ -267,29 +299,29 @@ class Turret(object):
         if (target_steps_x - self.current_x_steps) > 0:
             self.current_x_steps += 1
             if MOTOR_X_REVERSED:
-                t_x = threading.Thread(target=Turret.move_forward, args=(self, "1", 2,))
+                t_x = threading.Thread(target=Turret.move_forward, args=(self, "1", 2))
             else:
-                t_x = threading.Thread(target=Turret.move_backward, args=(self, "1", 2,))
+                t_x = threading.Thread(target=Turret.move_backward, args=(self, "1", 2))
         elif (target_steps_x - self.current_x_steps) < 0:
             self.current_x_steps -= 1
             if MOTOR_X_REVERSED:
-                t_x = threading.Thread(target=Turret.move_backward, args=(self, "1", 2,))
+                t_x = threading.Thread(target=Turret.move_backward, args=(self, "1", 2))
             else:
-                t_x = threading.Thread(target=Turret.move_forward, args=(self, "1", 2,))
+                t_x = threading.Thread(target=Turret.move_forward, args=(self, "1", 2))
 
         # move y
         if (target_steps_y - self.current_y_steps) > 0:
             self.current_y_steps += 1
             if MOTOR_Y_REVERSED:
-                t_y = threading.Thread(target=Turret.move_backward, args=(self, "2", 2,))
+                t_y = threading.Thread(target=Turret.move_backward, args=(self, "2", 2))
             else:
-                t_y = threading.Thread(target=Turret.move_forward, args=(self, "2", 2,))
+                t_y = threading.Thread(target=Turret.move_forward, args=(self, "2", 2))
         elif (target_steps_y - self.current_y_steps) < 0:
             self.current_y_steps -= 1
             if MOTOR_Y_REVERSED:
-                t_y = threading.Thread(target=Turret.move_forward, args=(self, "2", 2,))
+                t_y = threading.Thread(target=Turret.move_forward, args=(self, "2", 2))
             else:
-                t_y = threading.Thread(target=Turret.move_backward, args=(self, "2", 2,))
+                t_y = threading.Thread(target=Turret.move_backward, args=(self, "2", 2))
 
         # fire if necessary
         if not self.friendly_mode:

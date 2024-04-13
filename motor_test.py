@@ -20,11 +20,11 @@ MOTOR_X_REVERSED = True #Base turner M1 and M2 - Motor1
 MOTOR_Y_REVERSED = False #Aimer turner M3 and M4 - Motor2
 
 #Motor 2 test
-for i in range(2000):
+for i in range(20):
     kit.stepper2.onestep(direction=stepper.BACKWARD, style=stepper.MICROSTEP)
 
 #Motor 1 test
-for i in range(2000):
+for i in range(20):
     kit.stepper1.onestep(direction=stepper.BACKWARD, style=stepper.MICROSTEP)
 
 #Laser testing
@@ -36,3 +36,6 @@ GPIO.output(LASER_PIN, GPIO.LOW)
 GPIO.output(LASER_PIN, GPIO.HIGH)
 time.sleep(1)
 GPIO.output(LASER_PIN, GPIO.LOW)
+
+kit.stepper1.release()
+kit.stepper2.release()
