@@ -1,6 +1,3 @@
-import cv2
-print(cv2.__version__)
-
 import time
 import RPi.GPIO as GPIO
 from adafruit_motorkit import MotorKit

@@ -25,6 +25,7 @@ LASER_PIN = 27
 #######################
 
 
+
 @contextlib.contextmanager
 def raw_mode(file):
     #function that allows key presses
@@ -41,9 +42,6 @@ def raw_mode(file):
 class VideoUtils(object):
     @staticmethod
     def live_video(camera_port=0):
-        """
-        Opens a window with live video.
-        """
         video_capture = cv2.VideoCapture(0)
         while True:
             # Capture frame-by-frame
@@ -62,37 +60,28 @@ class VideoUtils(object):
     @staticmethod
     def find_motion(callback, camera_port=0, show_video=False):
         camera = cv2.VideoCapture(camera_port)
-        camera.set(3, 320)
-        camera.set(4, 240)
-        camera.set(cv2.CAP_PROP_FPS, 30)
         time.sleep(0.25)
 
         # initialize the first frame in the video stream
         firstFrame = None
         tempFrame = None
         count = 0
-        back_sub = cv2.createBackgroundSubtractorMOG2(history=700, varThreshold=25, detectShadows=True)
 
         # loop over the frames of the video
         while True:
-            # grab the current frame and initialize the occupied/unoccupied
-            # text
-
             (grabbed, frame) = camera.read()
 
-            # if the frame could not be grabbed, then we have reached the end
-            # of the video
             if not grabbed:
                 break
 
             # resize the frame, convert it to grayscale, and blur it
-            frame = cv2.resize(frame, (320,240))
+            frame = imutils.resize(frame, width=500)
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            gray = cv2.GaussianBlur(gray, (3, 3), 0)
+            gray = cv2.GaussianBlur(gray, (21, 21), 0)
 
             # if the first frame is None, initialize it
             if firstFrame is None:
-                print("Waiting for video to adjust...")
+                print ("Waiting for video to adjust...")
                 if tempFrame is None:
                     tempFrame = gray
                     continue
@@ -102,7 +91,7 @@ class VideoUtils(object):
                     tst = cv2.threshold(delta, 5, 255, cv2.THRESH_BINARY)[1]
                     tst = cv2.dilate(tst, None, iterations=2)
                     if count > 30:
-                        print("Done.\n Waiting for motion.")
+                        print ("Done.\n Waiting for motion.")
                         if not cv2.countNonZero(tst) > 0:
                             firstFrame = gray
                         else:
@@ -111,29 +100,22 @@ class VideoUtils(object):
                         count += 1
                         continue
 
-            # compute the absolute difference between the current frame and
-            # first frame
             frameDelta = cv2.absdiff(firstFrame, gray)
             thresh = cv2.threshold(frameDelta, 25, 255, cv2.THRESH_BINARY)[1]
             thresh = cv2.dilate(thresh, None, iterations=2)
-            #c = VideoUtils.get_best_contour(thresh.copy(), 5000)
-            contours, hierarchy = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            c = VideoUtils.get_best_contour(thresh.copy(), 5000)
 
-            if contours is not None:
-                for c in contours:
-                    (x, y, w, h) = cv2.boundingRect(c)
-                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            if c is not None:
+                (x, y, w, h) = cv2.boundingRect(c)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                #callback(c, frame)
 
-            # show the frame and record if the user presses a key
             if show_video:
                 cv2.imshow("Security Feed", frame)
                 key = cv2.waitKey(1) & 0xFF
-
-                # if the `q` key is pressed, break from the lop
                 if key == ord("q"):
                     break
 
-        # cleanup the camera and close any open windows
         camera.release()
         cv2.destroyAllWindows()
 
@@ -148,7 +130,7 @@ class VideoUtils(object):
                 best_area = area
                 best_cnt = cnt
         return best_cnt
-
+    
 
 class Turret(object):
     def __init__(self, friendly_mode=True):
@@ -236,8 +218,6 @@ class Turret(object):
         target_steps_x = (2*MAX_STEPS_X * (x + w / 2) / v_w) - MAX_STEPS_X
         target_steps_y = (2*MAX_STEPS_Y*(y+h/2) / v_h) - MAX_STEPS_Y
 
-        #print ("x: %s, y: %s" % (str(target_steps_x), str(target_steps_y)))
-        #print ("current x: %s, current y: %s" % (str(self.current_x_steps), str(self.current_y_steps)))
 
         t_x = threading.Thread()
         t_y = threading.Thread()
@@ -285,11 +265,6 @@ class Turret(object):
         t_fire.join()
 
     def interactive(self):
-        """
-        Starts an interactive session. Key presses determine movement.
-        :return:
-        """
-
         Turret.move_forward(self, "1", 1)
         Turret.move_forward(self, "2", 1)
 
@@ -345,12 +320,6 @@ class Turret(object):
 
     @staticmethod
     def move_backward(self, motor, steps):
-        """
-        Moves the stepper motor backward the specified number of steps
-        :param motor:
-        :param steps:
-        :return:
-        """
         if(motor == "1"):
             for i in range(steps):
                 self.kit.stepper1.onestep(direction=stepper.BACKWARD, style=stepper.MICROSTEP)
@@ -359,10 +328,6 @@ class Turret(object):
                 self.kit.stepper2.onestep(direction=stepper.BACKWARD, style=stepper.MICROSTEP)
 
     def __turn_off_motors(self):
-        """
-        Recommended for auto-disabling motors on shutdown!
-        :return:
-        """
         self.kit.stepper1.release()
         self.kit.stepper2.release()
         
