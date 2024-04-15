@@ -62,12 +62,16 @@ class VideoUtils(object):
     @staticmethod
     def find_motion(callback, camera_port=0, show_video=False):
         camera = cv2.VideoCapture(camera_port)
+        camera.set(3, 320)
+        camera.set(4, 240)
+        camera.set(cv2.CAP_PROP_FPS, 30)
         time.sleep(0.25)
 
         # initialize the first frame in the video stream
         firstFrame = None
         tempFrame = None
         count = 0
+        back_sub = cv2.createBackgroundSubtractorMOG2(history=700, varThreshold=25, detectShadows=True)
 
         # loop over the frames of the video
         while True:
@@ -82,9 +86,9 @@ class VideoUtils(object):
                 break
 
             # resize the frame, convert it to grayscale, and blur it
-            frame = imutils.resize(frame, width=500)
+            frame = cv2.resize(frame, (320,240))
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            gray = cv2.GaussianBlur(gray, (5, 5), 0)
+            gray = cv2.GaussianBlur(gray, (3, 3), 0)
 
             # if the first frame is None, initialize it
             if firstFrame is None:
@@ -111,18 +115,14 @@ class VideoUtils(object):
             # first frame
             frameDelta = cv2.absdiff(firstFrame, gray)
             thresh = cv2.threshold(frameDelta, 25, 255, cv2.THRESH_BINARY)[1]
-
-            # dilate the thresholded image to fill in holes, then find contours
-            # on thresholded image
             thresh = cv2.dilate(thresh, None, iterations=2)
-            c = VideoUtils.get_best_contour(thresh.copy(), 5000)
+            #c = VideoUtils.get_best_contour(thresh.copy(), 5000)
+            contours, hierarchy = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-            if c is not None:
-                # compute the bounding box for the contour, draw it on the frame,
-                # and update the text
-                (x, y, w, h) = cv2.boundingRect(c)
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                callback(c, frame)
+            if contours is not None:
+                for c in contours:
+                    (x, y, w, h) = cv2.boundingRect(c)
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
             # show the frame and record if the user presses a key
             if show_video:
@@ -136,58 +136,6 @@ class VideoUtils(object):
         # cleanup the camera and close any open windows
         camera.release()
         cv2.destroyAllWindows()
-
-
-    #     camera = cv2.VideoCapture(camera_port)
-    #     time.sleep(.25)
-
-    #     # Create background subtractor
-    #     bg_subtractor = cv2.createBackgroundSubtractorMOG2()
-
-    #     # Initialize variables
-    #     last_motion_time = time.time()
-    #     motion_delay = 1.0  # Minimum delay between detecting motions (in seconds)
-
-    #     while True:
-    #         grabbed, frame = camera.read()
-    #         if not grabbed:
-    #             break
-
-    #         # Apply background subtraction
-    #         fg_mask = bg_subtractor.apply(frame)
-
-    #         # Process the foreground mask (e.g., find contours)
-    #         contours, _ = cv2.findContours(fg_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    #         for contour in contours:
-    #             # Check if the contour has valid points
-    #             if len(contour) >= 5:
-    #                 # Calculate bounding rectangle for each contour
-    #                 x, y, w, h = cv2.boundingRect(contour)
-
-    #                 # Skip invalid contours (e.g., small areas)
-    #                 if w > 0 and h > 0:
-    #                     # Draw the rectangle on the original frame
-    #                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-
-    #                     # Pass the bounding box coordinates to the callback function
-    #                     callback((x, y, w, h), frame)
-
-    #                     # Update last motion time
-    #                     last_motion_time = time.time()
-
-    #         # Display the result
-    #         if show_video:
-    #             cv2.imshow("Motion Detection", frame)
-
-    #         # Check if enough time has passed since the last motion
-    #         if time.time() - last_motion_time >= motion_delay:
-    #             key = cv2.waitKey(1) & 0xFF
-    #             if key == ord("q"):
-    #                 break
-
-    #     camera.release()
-    #     cv2.destroyAllWindows()
 
     @staticmethod
     def get_best_contour(imgmask, threshold):
