@@ -14,7 +14,7 @@ from adafruit_motor import stepper
 
 ### User Parameters ###
 
-MOTOR_X_REVERSED = False #Base turner M1 and M2 - Motor1
+MOTOR_X_REVERSED = True #Base turner M1 and M2 - Motor1
 MOTOR_Y_REVERSED = True #Aimer turner M3 and M4 - Motor2
 
 LASER_PIN = 27
@@ -38,11 +38,22 @@ def raw_mode(file):
 class VideoUtils(object):
     @staticmethod
     def live_video(camera_port=0):
+        start_point = (380, 215)
+        end_point = (390,215)
+        start_point2 = (385, 210)
+        end_point2 = (385,220)
+        color = (0, 255, 0)
+        thickness = 1
         video_capture = cv2.VideoCapture(0)
+        width  = video_capture.get(3)  # float `width`
+        height = video_capture.get(4)  # float `height`
+        print(width)
+        print(height)
         while True:
             # Capture frame-by-frame
             ret, frame = video_capture.read()
-
+            frame = cv2.line(frame, start_point, end_point, color, thickness)
+            frame = cv2.line(frame, start_point2, end_point2, color, thickness)
             # Display the resulting frame
             cv2.imshow('Video', frame)
 
@@ -163,14 +174,14 @@ class Turret(object):
 
                     elif ch == "a":
                         if MOTOR_X_REVERSED:
-                            Turret.move_backward(self, "1", 20)
+                            Turret.move_backward(self, "1", 10)
                         else:
-                            Turret.move_forward(self, "1", 20)
+                            Turret.move_forward(self, "1", 10)
                     elif ch == "d":
                         if MOTOR_X_REVERSED:
-                            Turret.move_forward(self, "1", 20)
+                            Turret.move_forward(self, "1", 10)
                         else:
-                            Turret.move_backward(self, "1", 20)
+                            Turret.move_backward(self, "1", 10)
                     elif ch == "\n":
                         break
 
@@ -188,14 +199,14 @@ class Turret(object):
 
                     if ch == "w":
                         if MOTOR_Y_REVERSED:
-                            Turret.move_forward(self, "2", 20)
+                            Turret.move_forward(self, "2", 10)
                         else:
-                            Turret.move_backward(self, "2", 20)
+                            Turret.move_backward(self, "2", 10)
                     elif ch == "s":
                         if MOTOR_Y_REVERSED:
-                            Turret.move_backward(self, "2", 20)
+                            Turret.move_backward(self, "2", 10)
                         else:
-                            Turret.move_forward(self, "2", 20)
+                            Turret.move_forward(self, "2", 10)
                     elif ch == "\n":
                         break
 
@@ -260,10 +271,7 @@ class Turret(object):
 
 
     def interactive(self):
-        Turret.move_forward(self, "1", 1)
-        Turret.move_forward(self, "2", 1)
-
-        print ('Commands: Pivot with (a) and (d). Tilt with (w) and (s). Exit with (q)\n')
+        print ('Commands: Pivot with (a) and (d). Tilt with (w) and (s). Shoot with Enter. Exit with (q)\n')
         with raw_mode(sys.stdin):
             try:
                 while True:
@@ -273,24 +281,24 @@ class Turret(object):
 
                     if ch == "w":
                         if MOTOR_Y_REVERSED:
-                            Turret.move_forward(self, "2", 10)
+                            Turret.move_forward(self, "2", 5)
                         else:
-                            Turret.move_backward(self, "2", 10)
+                            Turret.move_backward(self, "2", 5)
                     elif ch == "s":
                         if MOTOR_Y_REVERSED:
-                            Turret.move_backward(self, "2", 10)
+                            Turret.move_backward(self, "2", 5)
                         else:
-                            Turret.move_forward(self, "2", 10)
+                            Turret.move_forward(self, "2", 5)
                     elif ch == "a":
                         if MOTOR_X_REVERSED:
-                            Turret.move_backward(self, "1", 10)
+                            Turret.move_backward(self, "1", 5)
                         else:
-                            Turret.move_forward(self, "1", 10)
+                            Turret.move_forward(self, "1", 5)
                     elif ch == "d":
                         if MOTOR_X_REVERSED:
-                            Turret.move_forward(self, "1", 10)
+                            Turret.move_forward(self, "1", 5)
                         else:
-                            Turret.move_backward(self, "1", 10)
+                            Turret.move_backward(self, "1", 5)
                     elif ch == "\n":
                         Turret.fire()
 
@@ -331,6 +339,6 @@ if __name__ == "__main__":
     t = Turret(friendly_mode=False)
 
     if input("Live video? (y, n)\n").lower() == "y":
-        Turret.calibrate()
         _thread.start_new_thread(VideoUtils.live_video, ())
+    t.calibrate()
     t.interactive()
