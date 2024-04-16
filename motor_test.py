@@ -17,12 +17,12 @@ MOTOR_X_REVERSED = True #Base turner M1 and M2 - Motor1
 MOTOR_Y_REVERSED = False #Aimer turner M3 and M4 - Motor2
 
 #Motor 2 test
-for i in range(20):
-    kit.stepper2.onestep(direction=stepper.BACKWARD, style=stepper.MICROSTEP)
+# for i in range(20):
+#     kit.stepper2.onestep(direction=stepper.BACKWARD, style=stepper.MICROSTEP)
 
 #Motor 1 test
-for i in range(20):
-    kit.stepper1.onestep(direction=stepper.BACKWARD, style=stepper.MICROSTEP)
+for i in range(200):
+    kit.stepper1.onestep(direction=stepper.FORWARD, style=stepper.MICROSTEP)
 
 #Laser testing
 LASER_PIN = 27

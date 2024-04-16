@@ -14,11 +14,11 @@ from adafruit_motor import stepper
 
 ### User Parameters ###
 
-MOTOR_X_REVERSED = True #Base turner M1 and M2 - Motor1
+MOTOR_X_REVERSED = False #Base turner M1 and M2 - Motor1
 MOTOR_Y_REVERSED = True #Aimer turner M3 and M4 - Motor2
 
 MAX_STEPS_X = 30
-MAX_STEPS_Y = 30
+MAX_STEPS_Y = 15
 
 LASER_PIN = 27
 
@@ -108,7 +108,7 @@ class VideoUtils(object):
             if c is not None:
                 (x, y, w, h) = cv2.boundingRect(c)
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                #callback(c, frame)
+                callback(c, frame)
 
             if show_video:
                 cv2.imshow("Security Feed", frame)
@@ -216,12 +216,11 @@ class Turret(object):
 
         # find height
         target_steps_x = (2*MAX_STEPS_X * (x + w / 2) / v_w) - MAX_STEPS_X
-        target_steps_y = (2*MAX_STEPS_Y*(y+h/2) / v_h) - MAX_STEPS_Y
-
+        #target_steps_y = (2*MAX_STEPS_Y*(y+h/2) / v_h) - MAX_STEPS_Y
 
         t_x = threading.Thread()
-        t_y = threading.Thread()
-        t_fire = threading.Thread()
+        #t_y = threading.Thread()
+        #t_fire = threading.Thread()
 
         # move x
         if (target_steps_x - self.current_x_steps) > 0:
@@ -238,31 +237,30 @@ class Turret(object):
                 t_x = threading.Thread(target=Turret.move_forward, args=(self, "1", 2))
 
         # move y
-        if (target_steps_y - self.current_y_steps) > 0:
-            self.current_y_steps += 1
-            if MOTOR_Y_REVERSED:
-                t_y = threading.Thread(target=Turret.move_backward, args=(self, "2", 2))
-            else:
-                t_y = threading.Thread(target=Turret.move_forward, args=(self, "2", 2))
-        elif (target_steps_y - self.current_y_steps) < 0:
-            self.current_y_steps -= 1
-            if MOTOR_Y_REVERSED:
-                t_y = threading.Thread(target=Turret.move_forward, args=(self, "2", 2))
-            else:
-                t_y = threading.Thread(target=Turret.move_backward, args=(self, "2", 2))
+        # if (target_steps_y - self.current_y_steps) > 0:
+        #     self.current_y_steps += 1
+        #     if MOTOR_Y_REVERSED:
+        #         t_y = threading.Thread(target=Turret.move_backward, args=(self, "2", 2))
+        #     else:
+        #         t_y = threading.Thread(target=Turret.move_forward, args=(self, "2", 2))
+        # elif (target_steps_y - self.current_y_steps) < 0:
+        #     self.current_y_steps -= 1
+        #     if MOTOR_Y_REVERSED:
+        #         t_y = threading.Thread(target=Turret.move_forward, args=(self, "2", 2))
+        #     else:
+        #         t_y = threading.Thread(target=Turret.move_backward, args=(self, "2", 2))
 
         # fire if necessary
-        if not self.friendly_mode:
-            if abs(target_steps_y - self.current_y_steps) <= 2 and abs(target_steps_x - self.current_x_steps) <= 2:
-                t_fire = threading.Thread(target=Turret.fire)
+        # if not self.friendly_mode:
+        #     if abs(target_steps_y - self.current_y_steps) <= 2 and abs(target_steps_x - self.current_x_steps) <= 2:
+        #         t_fire = threading.Thread(target=Turret.fire)
 
         t_x.start()
-        t_y.start()
-        t_fire.start()
-
+        #t_y.start()
+        # t_fire.start()
         t_x.join()
-        t_y.join()
-        t_fire.join()
+        #t_y.join()
+        # t_fire.join()
 
     def interactive(self):
         Turret.move_forward(self, "1", 1)
