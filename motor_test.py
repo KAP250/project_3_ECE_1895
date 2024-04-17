@@ -9,7 +9,7 @@ from adafruit_motor import stepper
 #Is reverse so .BACKWARD goes CW and .FORWARD goes CCW
 
 #Motor 2
-#Config is black and green on M3(green to black, red to green)
+#Config is black and green on M3(green to black, green to green)
 #Config is blue and red on M4(grey to blue, white to red)a
 #Is NOT reverse so .BACKWARD goes CCW and .FORWARD goes CW
 kit = MotorKit()
