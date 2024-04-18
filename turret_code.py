@@ -13,7 +13,7 @@ from adafruit_motor import stepper
 
 ### User Parameters ###
 
-MOTOR_X_REVERSED = False #Base turner M1 and M2 - Motor1
+MOTOR_X_REVERSED = True #Base turner M1 and M2 - Motor1
 MOTOR_Y_REVERSED = True #Aimer turner M3 and M4 - Motor2
 
 LASER_PIN = 27
@@ -83,7 +83,7 @@ class VideoUtils(object):
         # Check if any contour is large enough
         for contour in contours:
             area = cv2.contourArea(contour)
-            if area > 500:  # Adjust this threshold as needed
+            if area > 500:  # Adjust this threshold for size of object
                 print("blue")
                 return True
             else:
