@@ -1,12 +1,11 @@
 import cv2
 import time
 import _thread
-import threading
 import atexit
 import sys
 import termios
 import contextlib
-import imutils
+import numpy as np
 import RPi.GPIO as GPIO
 from adafruit_motorkit import MotorKit
 from adafruit_motor import stepper
@@ -14,13 +13,12 @@ from adafruit_motor import stepper
 
 ### User Parameters ###
 
-MOTOR_X_REVERSED = True #Base turner M1 and M2 - Motor1
+MOTOR_X_REVERSED = False #Base turner M1 and M2 - Motor1
 MOTOR_Y_REVERSED = True #Aimer turner M3 and M4 - Motor2
 
 LASER_PIN = 27
 
 #######################
-
 
 
 @contextlib.contextmanager
@@ -36,6 +34,8 @@ def raw_mode(file):
         termios.tcsetattr(file.fileno(), termios.TCSADRAIN, old_attrs)
 
 class VideoUtils(object):
+    frame = None
+
     @staticmethod
     def live_video(camera_port=0):
         start_point = (380, 215)
@@ -45,13 +45,10 @@ class VideoUtils(object):
         color = (0, 255, 0)
         thickness = 1
         video_capture = cv2.VideoCapture(0)
-        width  = video_capture.get(3)  # float `width`
-        height = video_capture.get(4)  # float `height`
-        print(width)
-        print(height)
         while True:
             # Capture frame-by-frame
             ret, frame = video_capture.read()
+            VideoUtils.frame = frame
             frame = cv2.line(frame, start_point, end_point, color, thickness)
             frame = cv2.line(frame, start_point2, end_point2, color, thickness)
             # Display the resulting frame
@@ -63,6 +60,36 @@ class VideoUtils(object):
         # When everything is done, release the capture
         video_capture.release()
         cv2.destroyAllWindows()
+
+    @staticmethod
+    def color_check(frame):
+        # Convert BGR to HSV
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+        # Define range of blue color in HSV
+        lower_blue = np.array([100, 50, 50])
+        upper_blue = np.array([140, 255, 255])
+
+        # Threshold the HSV image to get only blue colors
+        mask = cv2.inRange(hsv, lower_blue, upper_blue)
+
+        # Apply morphological operations to remove noise
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((20, 20), np.uint8))
+
+        # Find contours in the mask
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        # Check if any contour is large enough
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            if area > 500:  # Adjust this threshold as needed
+                print("blue")
+                return True
+            else:
+                print("none")
+                return False
+
 
     #Scrapping motion detection, Can't work if camera shakes too much, adding other changes
     # @staticmethod
@@ -307,9 +334,21 @@ class Turret(object):
 
     @staticmethod
     def fire():
-        GPIO.output(LASER_PIN, GPIO.HIGH)
-        time.sleep(1)
-        GPIO.output(LASER_PIN, GPIO.LOW)
+        blues = 0
+        nones = 0
+        for i in range(100):
+            boolVal = VideoUtils.color_check(VideoUtils.frame)
+            if(boolVal == True):
+                blues += 1
+            else:
+                nones += 1
+        if(blues > 20):
+            print("Friendly detected, not shooting")
+        else:
+            GPIO.output(LASER_PIN, GPIO.HIGH)
+            time.sleep(1)
+            GPIO.output(LASER_PIN, GPIO.LOW)
+            print("Enemy shot!")
         return
 
     @staticmethod
