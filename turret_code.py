@@ -342,7 +342,7 @@ class Turret(object):
                 blues += 1
             else:
                 nones += 1
-        if(blues > 20):
+        if(blues > 40):
             print("Friendly detected, not shooting")
         else:
             GPIO.output(LASER_PIN, GPIO.HIGH)
