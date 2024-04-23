@@ -57,6 +57,8 @@ while True:
             print("blue")
         else:
             print("none")
+
+    cv2.imshow('Video', mask)
     k = cv2.waitKey(5) & 0xFF 
     if k == 27:    
         break
