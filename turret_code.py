@@ -1,10 +1,12 @@
 import cv2
 import time
 import _thread
+import threading
 import atexit
 import sys
 import termios
 import contextlib
+import imutils
 import numpy as np
 import RPi.GPIO as GPIO
 from adafruit_motorkit import MotorKit
@@ -17,6 +19,9 @@ MOTOR_X_REVERSED = True #Base turner M1 and M2 - Motor1
 MOTOR_Y_REVERSED = True #Aimer turner M3 and M4 - Motor2
 
 LASER_PIN = 27
+
+MAX_STEPS_X = 30
+MAX_STEPS_Y = 15
 
 #######################
 
@@ -38,10 +43,10 @@ class VideoUtils(object):
 
     @staticmethod
     def live_video(camera_port=0):
-        start_point = (380, 215)
-        end_point = (390,215)
-        start_point2 = (385, 210)
-        end_point2 = (385,220)
+        start_point = (420, 235) #X axis line
+        end_point = (430,235)
+        start_point2 = (425, 230) #Y axis line
+        end_point2 = (425,240)
         color = (0, 255, 0)
         thickness = 1
         video_capture = cv2.VideoCapture(0)
@@ -92,78 +97,78 @@ class VideoUtils(object):
 
 
     #Scrapping motion detection, Can't work if camera shakes too much, adding other changes
-    # @staticmethod
-    # def find_motion(callback, camera_port=0, show_video=False):
-    #     camera = cv2.VideoCapture(camera_port)
-    #     time.sleep(0.25)
+    @staticmethod
+    def find_motion(callback, camera_port=0, show_video=False):
+        camera = cv2.VideoCapture(camera_port)
+        time.sleep(0.25)
 
-    #     # initialize the first frame in the video stream
-    #     firstFrame = None
-    #     tempFrame = None
-    #     count = 0
+        # initialize the first frame in the video stream
+        firstFrame = None
+        tempFrame = None
+        count = 0
 
-    #     # loop over the frames of the video
-    #     while True:
-    #         (grabbed, frame) = camera.read()
+        # loop over the frames of the video
+        while True:
+            (grabbed, frame) = camera.read()
 
-    #         if not grabbed:
-    #             break
+            if not grabbed:
+                break
 
-    #         # resize the frame, convert it to grayscale, and blur it
-    #         frame = imutils.resize(frame, width=500)
-    #         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    #         gray = cv2.GaussianBlur(gray, (21, 21), 0)
+            # resize the frame, convert it to grayscale, and blur it
+            frame = imutils.resize(frame, width=500)
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            gray = cv2.GaussianBlur(gray, (21, 21), 0)
 
-    #         # if the first frame is None, initialize it
-    #         if firstFrame is None:
-    #             print ("Waiting for video to adjust...")
-    #             if tempFrame is None:
-    #                 tempFrame = gray
-    #                 continue
-    #             else:
-    #                 delta = cv2.absdiff(tempFrame, gray)
-    #                 tempFrame = gray
-    #                 tst = cv2.threshold(delta, 5, 255, cv2.THRESH_BINARY)[1]
-    #                 tst = cv2.dilate(tst, None, iterations=2)
-    #                 if count > 30:
-    #                     print ("Done.\n Waiting for motion.")
-    #                     if not cv2.countNonZero(tst) > 0:
-    #                         firstFrame = gray
-    #                     else:
-    #                         continue
-    #                 else:
-    #                     count += 1
-    #                     continue
+            # if the first frame is None, initialize it
+            if firstFrame is None:
+                print ("Waiting for video to adjust...")
+                if tempFrame is None:
+                    tempFrame = gray
+                    continue
+                else:
+                    delta = cv2.absdiff(tempFrame, gray)
+                    tempFrame = gray
+                    tst = cv2.threshold(delta, 5, 255, cv2.THRESH_BINARY)[1]
+                    tst = cv2.dilate(tst, None, iterations=2)
+                    if count > 30:
+                        print ("Done.\n Waiting for motion.")
+                        if not cv2.countNonZero(tst) > 0:
+                            firstFrame = gray
+                        else:
+                            continue
+                    else:
+                        count += 1
+                        continue
 
-    #         frameDelta = cv2.absdiff(firstFrame, gray)
-    #         thresh = cv2.threshold(frameDelta, 50, 255, cv2.THRESH_BINARY)[1]
-    #         thresh = cv2.dilate(thresh, None, iterations=2)
-    #         c = VideoUtils.get_best_contour(thresh.copy(), 5000)
+            frameDelta = cv2.absdiff(firstFrame, gray)
+            thresh = cv2.threshold(frameDelta, 50, 255, cv2.THRESH_BINARY)[1]
+            thresh = cv2.dilate(thresh, None, iterations=2)
+            c = VideoUtils.get_best_contour(thresh.copy(), 5000)
 
-    #         if c is not None:
-    #             (x, y, w, h) = cv2.boundingRect(c)
-    #             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-    #             callback(c, frame)
+            if c is not None:
+                (x, y, w, h) = cv2.boundingRect(c)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                callback(c, frame)
 
-    #         if show_video:
-    #             cv2.imshow("Security Feed", frame)
-    #             key = cv2.waitKey(1) & 0xFF
-    #             if key == ord("q"):
-    #                 break
+            if show_video:
+                cv2.imshow("Security Feed", frame)
+                key = cv2.waitKey(1) & 0xFF
+                if key == ord("q"):
+                    break
 
-    #     camera.release()
-    #     cv2.destroyAllWindows()
-    # @staticmethod
-    # def get_best_contour(imgmask, threshold):
-    #     contours, hierarchy = cv2.findContours(imgmask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    #     best_area = threshold
-    #     best_cnt = None
-    #     for cnt in contours:
-    #         area = cv2.contourArea(cnt)
-    #         if area > best_area:
-    #             best_area = area
-    #             best_cnt = cnt
-    #     return best_cnt
+        camera.release()
+        cv2.destroyAllWindows()
+    @staticmethod
+    def get_best_contour(imgmask, threshold):
+        contours, hierarchy = cv2.findContours(imgmask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        best_area = threshold
+        best_cnt = None
+        for cnt in contours:
+            area = cv2.contourArea(cnt)
+            if area > best_area:
+                best_area = area
+                best_cnt = cnt
+        return best_cnt
     
 
 class Turret(object):
@@ -242,59 +247,59 @@ class Turret(object):
                 sys.exit(1)
 
     #Scrapping motion detection, Can't work if camera shakes too much, adding other changes
-    # def motion_detection(self, show_video=False):
-    #     VideoUtils.find_motion(self.__move_axis, show_video=show_video)
-    # def __move_axis(self, contour, frame):
-    #     (v_h, v_w) = frame.shape[:2]
-    #     (x, y, w, h) = cv2.boundingRect(contour)
+    def motion_detection(self, show_video=False):
+        VideoUtils.find_motion(self.__move_axis, show_video=show_video)
+    def __move_axis(self, contour, frame):
+        (v_h, v_w) = frame.shape[:2]
+        (x, y, w, h) = cv2.boundingRect(contour)
 
-    #     # find height
-    #     target_steps_x = (2*MAX_STEPS_X * (x + w / 2) / v_w) - MAX_STEPS_X
-    #     #target_steps_y = (2*MAX_STEPS_Y*(y+h/2) / v_h) - MAX_STEPS_Y
+        # find height
+        target_steps_x = (2*MAX_STEPS_X * (x + w / 2) / v_w) - MAX_STEPS_X
+        #target_steps_y = (2*MAX_STEPS_Y*(y+h/2) / v_h) - MAX_STEPS_Y
 
-    #     t_x = threading.Thread()
-    #     #t_y = threading.Thread()
-    #     #t_fire = threading.Thread()
+        t_x = threading.Thread()
+        #t_y = threading.Thread()
+        #t_fire = threading.Thread()
 
-    #     # move x
-    #     if (target_steps_x - self.current_x_steps) > 0:
-    #         self.current_x_steps += 1
-    #         if MOTOR_X_REVERSED:
-    #             t_x = threading.Thread(target=Turret.move_forward, args=(self, "1", 10))
-    #         else:
-    #             t_x = threading.Thread(target=Turret.move_backward, args=(self, "1", 10))
-    #     elif (target_steps_x - self.current_x_steps) < 0:
-    #         self.current_x_steps -= 1
-    #         if MOTOR_X_REVERSED:
-    #             t_x = threading.Thread(target=Turret.move_backward, args=(self, "1", 10))
-    #         else:
-    #             t_x = threading.Thread(target=Turret.move_forward, args=(self, "1", 10))
+        # move x
+        if (target_steps_x - self.current_x_steps) > 0:
+            self.current_x_steps += 1
+            if MOTOR_X_REVERSED:
+                t_x = threading.Thread(target=Turret.move_forward, args=(self, "1", 10))
+            else:
+                t_x = threading.Thread(target=Turret.move_backward, args=(self, "1", 10))
+        elif (target_steps_x - self.current_x_steps) < 0:
+            self.current_x_steps -= 1
+            if MOTOR_X_REVERSED:
+                t_x = threading.Thread(target=Turret.move_backward, args=(self, "1", 10))
+            else:
+                t_x = threading.Thread(target=Turret.move_forward, args=(self, "1", 10))
 
-    #     # move y
-    #     # if (target_steps_y - self.current_y_steps) > 0:
-    #     #     self.current_y_steps += 1
-    #     #     if MOTOR_Y_REVERSED:
-    #     #         t_y = threading.Thread(target=Turret.move_backward, args=(self, "2", 2))
-    #     #     else:
-    #     #         t_y = threading.Thread(target=Turret.move_forward, args=(self, "2", 2))
-    #     # elif (target_steps_y - self.current_y_steps) < 0:
-    #     #     self.current_y_steps -= 1
-    #     #     if MOTOR_Y_REVERSED:
-    #     #         t_y = threading.Thread(target=Turret.move_forward, args=(self, "2", 2))
-    #     #     else:
-    #     #         t_y = threading.Thread(target=Turret.move_backward, args=(self, "2", 2))
+        # move y
+        # if (target_steps_y - self.current_y_steps) > 0:
+        #     self.current_y_steps += 1
+        #     if MOTOR_Y_REVERSED:
+        #         t_y = threading.Thread(target=Turret.move_backward, args=(self, "2", 2))
+        #     else:
+        #         t_y = threading.Thread(target=Turret.move_forward, args=(self, "2", 2))
+        # elif (target_steps_y - self.current_y_steps) < 0:
+        #     self.current_y_steps -= 1
+        #     if MOTOR_Y_REVERSED:
+        #         t_y = threading.Thread(target=Turret.move_forward, args=(self, "2", 2))
+        #     else:
+        #         t_y = threading.Thread(target=Turret.move_backward, args=(self, "2", 2))
 
-    #     # fire if necessary
-    #     # if not self.friendly_mode:
-    #     #     if abs(target_steps_y - self.current_y_steps) <= 2 and abs(target_steps_x - self.current_x_steps) <= 2:
-    #     #         t_fire = threading.Thread(target=Turret.fire)
+        # fire if necessary
+        # if not self.friendly_mode:
+        #     if abs(target_steps_y - self.current_y_steps) <= 2 and abs(target_steps_x - self.current_x_steps) <= 2:
+        #         t_fire = threading.Thread(target=Turret.fire)
 
-    #     t_x.start()
-    #     #t_y.start()
-    #     # t_fire.start()
-    #     t_x.join()
-    #     #t_y.join()
-    #     # t_fire.join()
+        t_x.start()
+        #t_y.start()
+        # t_fire.start()
+        t_x.join()
+        #t_y.join()
+        # t_fire.join()
 
 
     def interactive(self):
@@ -342,7 +347,7 @@ class Turret(object):
                 blues += 1
             else:
                 nones += 1
-        if(blues > 40):
+        if(blues > 30):
             print("Friendly detected, not shooting")
         else:
             GPIO.output(LASER_PIN, GPIO.HIGH)
@@ -377,7 +382,15 @@ class Turret(object):
 if __name__ == "__main__":
     t = Turret(friendly_mode=False)
 
-    if input("Live video? (y, n)\n").lower() == "y":
-        _thread.start_new_thread(VideoUtils.live_video, ())
-    t.calibrate()
-    t.interactive()
+    user_input = input("Choose an input mode: (1) Motion Detection, (2) Interactive\n")
+
+    if user_input == "1":
+        t.calibrate()
+        if input("Live video? (y, n)\n").lower() == "y":
+            t.motion_detection(show_video=True)
+        else:
+            t.motion_detection()
+    elif user_input == "2":
+        if input("Live video? (y, n)\n").lower() == "y":
+            _thread.start_new_thread(VideoUtils.live_video, ())
+        t.interactive()

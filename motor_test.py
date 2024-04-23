@@ -10,7 +10,7 @@ from adafruit_motor import stepper
 
 #Motor 2
 #Config is black and green on M3(green to black, light green to green)
-#Config is blue and red on M4(grey to blue, white to red)a
+#Config is blue and red on M4(grey to blue, white to red)
 #Is NOT reverse so .BACKWARD goes CCW and .FORWARD goes CW
 kit = MotorKit()
 MOTOR_X_REVERSED = True #Base turner M1 and M2 - Motor1
@@ -21,7 +21,7 @@ MOTOR_Y_REVERSED = False #Aimer turner M3 and M4 - Motor2
 #     kit.stepper2.onestep(direction=stepper.BACKWARD, style=stepper.MICROSTEP)
 
 #Motor 1 test
-for i in range(200):
+for i in range(20):
     kit.stepper1.onestep(direction=stepper.FORWARD, style=stepper.MICROSTEP)
 
 #Laser testing
